@@ -15,9 +15,22 @@ function App() {
 
   const fetchDbGreeting = () => {
     fetch('/api/db-hello')
-      .then(response => response.text())
+      .then(response => {
+        // 1. Check for HTTP errors
+        if (!response.ok) {
+          // This will trigger the .catch() block
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        // 2. If the response is OK, proceed to get the text
+        return response.text();
+      })
       .then(message => {
         setDbMessage(message);
+      })
+      .catch(error => {
+        // 3. This block catches both network errors and the error we threw above
+        console.error('There was a problem with the fetch operation:', error);
+        setDbMessage('Failed to load greeting.'); // Update UI to show an error
       });
   };
 

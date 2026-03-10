@@ -255,6 +255,8 @@ Please be aware of these two files:
 
 When we complete the next step, please update both files accordingly.
 
+Additionally , DON'T break the previous implementation steps.
+
 Let's begin implementing Step Y.
 ```
 
