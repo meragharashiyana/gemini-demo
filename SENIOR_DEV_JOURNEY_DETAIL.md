@@ -76,3 +76,59 @@ This document provides the technical implementation details, testing steps, and 
     *   Check `http://localhost:8080/api/monitor`. It should say `OPEN`.
     *   All subsequent calls to `/api/hello` will immediately return the Fallback message without waiting (Fail Fast).
 5.  **Recovery**: Wait 10 seconds, then try again. The circuit will move to `HALF_OPEN` and eventually `CLOSED` if calls succeed.
+
+---
+
+## 4. Integration Testing with Testcontainers
+
+**Goal:** Replace in-memory DBs with real Dockerized databases for reliable integration tests.
+
+### Implementation Details
+1.  **Dependencies**: Added `spring-boot-starter-data-jpa`, `postgresql`, `testcontainers`, and `h2` to `pom.xml`.
+    *   `spring-boot-starter-data-jpa`: For database access.
+    *   `postgresql`: The production database driver.
+    *   `testcontainers`: To manage Docker containers in tests. @Testcontainers annotation is powerfull Java library allows to manager Docker containers from tests code.
+    *   `h2`: As an in-memory database for tests that don't need a real database.
+2.  **Integration Test**: Created `HelloControllerIntegrationTest.java`.
+    *   `@Testcontainers`: Enables Testcontainers support.
+    *   `@Container`: Defines a `PostgreSQLContainer` that will be started before the tests.
+    *   `@DynamicPropertySource`: Dynamically sets the `spring.datasource.*` properties to point to the running Testcontainer as testCOntainer starts on some random ports.
+    *   The test uses `MockMvc` to call the `/api/hello` endpoint and asserts the response, handling the asynchronous `CompletableFuture` and the random failure of the controller.
+3.  **Unit/Component Tests**: The existing tests (`GeminiDemoApplicationTests` and `HelloControllerTest`) now use the H2 in-memory database, which is auto-configured by Spring Boot.
+
+### How to Verify
+1.  Run the tests: `mvnw test` (or `./mvnw.cmd test` on Windows).
+2.  **Observe Logs**:
+    *   You will see logs from Testcontainers starting the PostgreSQL Docker container.
+    *   The tests will run, and you will see a "BUILD SUCCESS" message at the end.
+    *   The `HelloControllerIntegrationTest` will connect to the PostgreSQL container, while the other tests will use the H2 in-memory database.
+
+### Understanding the Test Logs
+
+When you run the tests, you might notice two interesting things in the logs: the Spring Boot application starts multiple times, and two containers are created instead of just one. Here’s why that happens.
+
+**1. Why does Spring Boot start three times?**
+
+The Spring Test framework is optimized for speed. It caches and reuses the application context between tests, but only if their configuration is identical. If a test has a different configuration, a new context must be created, which appears as a full Spring Boot start.
+
+Our three test classes each have a unique configuration, forcing three separate starts:
+
+*   **Start 1: `GeminiDemoApplicationTests`**
+    *   **Configuration**: H2 Database + Real Web Server (`@SpringBootTest(webEnvironment = RANDOM_PORT)`)
+    *   A new context is created for this test.
+
+*   **Start 2: `HelloControllerIntegrationTest`**
+    *   **Configuration**: **PostgreSQL** Database + Real Web Server (`@SpringBootTest(webEnvironment = RANDOM_PORT)` + `@DynamicPropertySource`)
+    *   This test uses `@DynamicPropertySource` to point to the PostgreSQL Testcontainer, so its database config is different from the first test, requiring a new context.
+
+*   **Start 3: `HelloControllerTest`**
+    *   **Configuration**: H2 Database + **Mock Web Server** (`@SpringBootTest(webEnvironment = MOCK)`)
+    *   This test uses a mock web environment, which is different from the other two tests that use a real server, thus requiring a third context.
+
+**2. Why are two containers created (PostgreSQL and Ryuk)?**
+
+You will see logs for two containers spinning up.
+
+*   **`postgres:16-alpine`**: This is the container you defined in `HelloControllerIntegrationTest`. It's a real PostgreSQL database instance used for running your high-fidelity integration test.
+
+*   **`testcontainers/ryuk:x.x.x`**: This is a small, mandatory helper container that Testcontainers starts automatically. Its only job is to act as a "resource reaper." It monitors the test execution and ensures that any containers started by Testcontainers (like your PostgreSQL instance) are automatically stopped and removed when the tests are finished, even if the JVM terminates unexpectedly. This prevents orphaned containers from being left on your system.

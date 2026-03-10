@@ -19,7 +19,7 @@ This document tracks the advanced engineering practices implemented in this proj
 
 4.  **Integration Testing with Testcontainers**
     *   **Goal**: Replace in-memory DBs with real Dockerized databases for reliable integration tests.
-    *   **Status**: *Pending*
+    *   **Status**: *Completed*
 
 5.  **Observability & Monitoring**
     *   **Goal**: Expose application metrics (Micrometer) for Prometheus and visualize in Grafana.
