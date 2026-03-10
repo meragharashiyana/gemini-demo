@@ -19,6 +19,9 @@ target/
 ### Logs ###
 *.log
 
+### Archives ###
+*.zip
+
 ### Frontend ###
 frontend/node_modules/
 frontend/build/

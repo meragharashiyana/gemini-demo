@@ -257,3 +257,27 @@ When we complete the next step, please update both files accordingly.
 
 Let's begin implementing Step Y.
 ```
+
+
+## Commit Message Conventions
+
+To keep the project history clean, we follow the Conventional Commits standard.
+
+### Common Prefixes
+
+*   **`feat`**: New feature.
+*   **`fix`**: Bug fix.
+*   **`docs`**: Documentation.
+*   **`test`**: Tests.
+*   **`refactor`**: Code change (no feature/fix).
+*   **`chore`**: Build/Auxiliary tools.
+
+### "Senior Dev Journey" Scope
+
+Use a scope to indicate the step number from `SENIOR_DEV_JOURNEY.md`.
+
+**Format**: `type(scope): message`
+
+**Example**:
+```bash
+git commit -m "feat(step-4): Add Testcontainers"
