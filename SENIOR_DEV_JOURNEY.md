@@ -21,6 +21,10 @@ This document tracks the advanced engineering practices implemented in this proj
     *   **Goal**: Replace in-memory DBs with real Dockerized databases for reliable integration tests.
     *   **Status**: *Completed*
 
+4a. **Database Integration with MyBatis**
+    *   **Goal**: Add a proper DAO layer using MyBatis to fetch data from a database.
+    *   **Status**: *Completed*
+
 5.  **Observability & Monitoring**
     *   **Goal**: Expose application metrics (Micrometer) for Prometheus and visualize in Grafana.
     *   **Status**: *Pending*

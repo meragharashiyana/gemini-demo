@@ -1,5 +1,6 @@
 package com.example.gemini_demo;
 
+import com.example.gemini_demo.service.HelloService;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.concurrent.CompletableFuture;
@@ -16,9 +17,16 @@ public class HelloController {
     private static final Logger logger = LoggerFactory.getLogger(HelloController.class);
 
     private final CircuitBreakerRegistry circuitBreakerRegistry;
+    private final HelloService helloService;
 
-    public HelloController(CircuitBreakerRegistry circuitBreakerRegistry) {
+    public HelloController(CircuitBreakerRegistry circuitBreakerRegistry, HelloService helloService) {
         this.circuitBreakerRegistry = circuitBreakerRegistry;
+        this.helloService = helloService;
+    }
+
+    @GetMapping("/api/db-hello")
+    public String dbHello() {
+        return helloService.getGreetingFromDb();
     }
 
     @GetMapping("/api/hello")

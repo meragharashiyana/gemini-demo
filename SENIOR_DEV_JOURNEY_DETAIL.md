@@ -132,3 +132,33 @@ You will see logs for two containers spinning up.
 *   **`postgres:16-alpine`**: This is the container you defined in `HelloControllerIntegrationTest`. It's a real PostgreSQL database instance used for running your high-fidelity integration test.
 
 *   **`testcontainers/ryuk:x.x.x`**: This is a small, mandatory helper container that Testcontainers starts automatically. Its only job is to act as a "resource reaper." It monitors the test execution and ensures that any containers started by Testcontainers (like your PostgreSQL instance) are automatically stopped and removed when the tests are finished, even if the JVM terminates unexpectedly. This prevents orphaned containers from being left on your system.
+
+---
+
+## 4a. Database Integration with MyBatis
+
+**Goal:** Add a proper DAO layer using MyBatis to fetch data from a database, confirming end-to-end execution.
+
+### Implementation Details
+1.  **Dependencies**: Added `mybatis-spring-boot-starter` and `spring-boot-starter-jdbc` to `pom.xml`.
+2.  **Database Schema**: Created `src/main/resources/schema.sql` to define a `GREETINGS` table and `src/main/resources/data.sql` to populate it with sample messages.
+3.  **Domain Model**: A simple `Greeting.java` Pojo was created in the `com.example.gemini_demo.model` package.
+4.  **Mapper Interface (DAO)**:
+    *   Created `GreetingMapper.java` in the `com.example.gemini_demo.mapper` package.
+    *   Annotated with `@Mapper` to be picked up by Spring.
+    *   Defined a `getRandomGreeting()` method with an `@Select` annotation containing the SQL to fetch a random greeting from the H2 database (`SELECT * FROM greetings ORDER BY RAND() LIMIT 1`).
+5.  **Service Layer**: The `HelloService` was updated to be injected with the `GreetingMapper` and a new method `getGreetingFromDb()` was added to call the mapper.
+6.  **Controller Layer**: A new, separate endpoint `/api/db-hello` was added to `HelloController` to expose the new functionality without touching the existing endpoints.
+7.  **Testing**:
+    *   A new integration test `HelloControllerDbIntegrationTest.java` was created.
+    *   It uses `@SpringBootTest` and `MockMvc` to call the `/api/db-hello` endpoint.
+    *   It asserts that the HTTP status is OK and the response body is one of the messages seeded in `data.sql`, confirming the entire flow from controller to database.
+
+### How to Verify
+1.  Run the application: `mvn spring-boot:run`.
+2.  Access the new endpoint: `http://localhost:8080/api/db-hello`.
+3.  **Observe Response**: Each time you refresh the page, you should see one of the three greetings from the database:
+    *   `Hello from the database!`
+    *   `Database says hi!`
+    *   `Greetings from H2!`
+4.  **Run Tests**: Execute `mvnw.cmd test`. All tests, including the new `HelloControllerDbIntegrationTest`, should pass, proving no existing functionality was broken.
