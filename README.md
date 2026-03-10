@@ -237,3 +237,23 @@ By default, `mvn spring-boot:run` **does not** run the React development server 
 3.  **Copying**: The `maven-resources-plugin` copies the resulting `frontend/build` directory to `target/classes/static` during the `process-resources` phase.
 
 **Result**: Running `mvn spring-boot:run` will now perform a full build of the frontend before starting the server.
+
+---
+
+## Continuing the Journey with Gemini Code Assist
+
+To continue working on the "Senior Dev Journey" in a new chat session, use the following prompt as your first message to provide the necessary context. Remember to update the step number.
+
+```markdown
+We are continuing the 'Senior Dev Journey' for this project.
+
+**Current Status:** We have completed Step X. The next step is **Step Y: [Topic Name]**.
+
+Please be aware of these two files:
+1.  `SENIOR_DEV_JOURNEY.md` (The roadmap)
+2.  `SENIOR_DEV_JOURNEY_DETAIL.md` (The implementation guide)
+
+When we complete the next step, please update both files accordingly.
+
+Let's begin implementing Step Y.
+```
