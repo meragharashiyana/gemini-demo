@@ -27,7 +27,7 @@ This document tracks the advanced engineering practices implemented in this proj
 
 5.  **Observability & Monitoring**
     *   **Goal**: Expose application metrics (Micrometer) for Prometheus and visualize in Grafana.
-    *   **Status**: *Pending*
+    *   **Status**: *Completed*
 
 6.  **Database Schema Migration**
     *   **Goal**: Version control database schema changes using Flyway to ensure consistent deployments.

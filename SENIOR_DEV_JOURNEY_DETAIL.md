@@ -162,3 +162,56 @@ You will see logs for two containers spinning up.
     *   `Database says hi!`
     *   `Greetings from H2!`
 4.  **Run Tests**: Execute `mvnw.cmd test`. All tests, including the new `HelloControllerDbIntegrationTest`, should pass, proving no existing functionality was broken.
+
+---
+
+## 5. Observability & Monitoring
+
+**Goal:** Introduce logging, metrics, and tracing to the application.
+
+### Implementation Details
+1.  **Dependencies**: Added `spring-boot-starter-actuator`, `micrometer-registry-prometheus`, `micrometer-tracing-bridge-brave`, and `zipkin-reporter-brave` to `pom.xml`.
+2.  **Configuration**: Updated `application.properties` to:
+    *   Expose the `health` and `prometheus` actuator endpoints. All endpoints are now served on the main application port (`8080`).
+    *   Set an application name (`gemini-demo`) for easier identification in monitoring tools.
+    *   Configure the logging pattern to include `traceId` and `spanId` for correlated logging.
+    *   Enable tracing and set the sampling probability to `1.0` to capture all traces during development.
+3.  **Monitoring Infrastructure**:
+    *   Created a `docker-compose.yml` file to run Prometheus and Zipkin.
+    *   Created a `prometheus.yml` configuration file to scrape metrics from the Spring Boot application's `/actuator/prometheus` endpoint. The target is set to `host.docker.internal:8080` to allow Prometheus running in a Docker container to access the application running on the host machine.
+4.  **Custom Metric**:
+    *   Injected `MeterRegistry` into `HelloController`.
+    *   Created a `Counter` named `api.db.hello.count` to track the number of calls to the `/api/db-hello` endpoint.
+    *   Incremented the counter every time the `dbHello()` method is called.
+
+### How to Verify
+1.  **Start Monitoring Infrastructure**:
+    *   Open a terminal in the project root and run `docker-compose up -d`. This will start Prometheus and Zipkin in the background.
+2.  **Run the Application**:
+    *   In a separate terminal, run the Spring Boot application: `mvnw spring-boot:run`.
+3.  **Generate Metrics and Traces**:
+    *   Access the application's endpoints a few times using your browser or `curl`:
+        *   `http://localhost:8080/api/hello`
+        *   `http://localhost:8080/api/db-hello`
+        *   `http://localhost:8080/actuator/prometheus` (You can visit this to see the raw metrics your app is exposing)
+4.  **Verify Metrics in Prometheus**:
+    *   Open Prometheus in your browser: `http://localhost:9090`.
+    *   In the "Expression" input box, start typing `api_db_hello_count_total` and click "Execute".
+    *   **Result**: You should see a line with a value representing how many times you hit the `/api/db-hello` endpoint.
+    *   **Troubleshooting**:
+        *   If you see no targets in Prometheus (`Status` -> `Targets`), it means Prometheus can't connect to your app. The most common issue is the `host.docker.internal` address.
+        *   **On Windows or Mac with Docker Desktop**: `host.docker.internal` should work automatically.
+        *   **On Linux**: You may need to add `--add-host=host.docker.internal:host-gateway` to the `command` section of the prometheus service in your `docker-compose.yml`. Or, you can replace `host.docker.internal` with your machine's actual IP address in `prometheus.yml`.
+5.  **Verify Traces in Zipkin**:
+    *   Open Zipkin in your browser: `http://localhost:9411`.
+    *   Click the "Find Traces" button (magnifying glass).
+    *   **Result**: You should see traces for the requests you made. Click on one to see the detailed span, showing the time spent in the `HelloController` and `HelloService`.
+    *   **Troubleshooting**:
+        *   If you see no traces, ensure the application has started successfully and that you have made requests to the API endpoints.
+        *   Check the Spring Boot application logs to ensure there are no errors related to Zipkin connectivity.
+6.  **Verify Correlated Logs**:
+    *   Examine the console output of your running Spring Boot application. You should now see logs prefixed with the application name, a `traceId`, and a `spanId`.
+    ```text
+    INFO [gemini-demo,63f3e3e3e3e3e3e3,63f3e3e3e3e3e3e3] 24416 --- [nio-8080-exec-2] c.e.g.HelloController: HelloController's hello() method was called
+    ```
+    *   This `traceId` should match the one you see in Zipkin for the same request, allowing you to correlate a specific log message to a specific distributed trace.

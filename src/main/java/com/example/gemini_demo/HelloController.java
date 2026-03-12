@@ -3,6 +3,8 @@ package com.example.gemini_demo;
 import com.example.gemini_demo.service.HelloService;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,14 +20,19 @@ public class HelloController {
 
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final HelloService helloService;
+    private final Counter dbHelloCounter;
 
-    public HelloController(CircuitBreakerRegistry circuitBreakerRegistry, HelloService helloService) {
+    public HelloController(CircuitBreakerRegistry circuitBreakerRegistry, HelloService helloService, MeterRegistry meterRegistry) {
         this.circuitBreakerRegistry = circuitBreakerRegistry;
         this.helloService = helloService;
+        this.dbHelloCounter = Counter.builder("api.db.hello.count")
+                                     .description("Number of times the /api/db-hello endpoint has been called")
+                                     .register(meterRegistry);
     }
 
     @GetMapping("/api/db-hello")
     public String dbHello() {
+        dbHelloCounter.increment();
         return helloService.getGreetingFromDb();
     }
 
