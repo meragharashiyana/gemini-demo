@@ -5,7 +5,13 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.MigrationState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.gemini_demo.aspect.MeasureTime;
@@ -21,19 +27,51 @@ public class HelloController {
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final HelloService helloService;
     private final Counter dbHelloCounter;
+    private final Flyway flyway;
 
-    public HelloController(CircuitBreakerRegistry circuitBreakerRegistry, HelloService helloService, MeterRegistry meterRegistry) {
+    public HelloController(CircuitBreakerRegistry circuitBreakerRegistry, HelloService helloService, MeterRegistry meterRegistry, Flyway flyway) {
         this.circuitBreakerRegistry = circuitBreakerRegistry;
         this.helloService = helloService;
         this.dbHelloCounter = Counter.builder("api.db.hello.count")
                                      .description("Number of times the /api/db-hello endpoint has been called")
                                      .register(meterRegistry);
+        this.flyway = flyway;
     }
 
     @GetMapping("/api/db-hello")
     public String dbHello() {
         dbHelloCounter.increment();
         return helloService.getGreetingFromDb();
+    }
+
+    @GetMapping("/api/users")
+    public java.util.List<com.example.gemini_demo.model.User> users() {
+        return helloService.getAllUsers();
+    }
+
+    @GetMapping("/api/migrations")
+    public Map<String, Object> migrations() {
+        MigrationInfo current = flyway.info().current();
+        MigrationInfo[] applied = flyway.info().applied();
+
+        Map<String, Object> result = new HashMap<>();
+        if (current != null) {
+            Map<String, Object> currentMap = new HashMap<>();
+            currentMap.put("version", current.getVersion() != null ? current.getVersion().toString() : null);
+            currentMap.put("description", current.getDescription());
+            currentMap.put("state", current.getState().getDisplayName());
+            result.put("current", currentMap);
+        } else {
+            result.put("current", null);
+        }
+
+        result.put("applied", Arrays.stream(applied).map(m -> Map.of(
+                "version", m.getVersion() != null ? m.getVersion().toString() : null,
+                "description", m.getDescription(),
+                "state", m.getState().getDisplayName()
+        )).toList());
+
+        return result;
     }
 
     @GetMapping("/api/hello")

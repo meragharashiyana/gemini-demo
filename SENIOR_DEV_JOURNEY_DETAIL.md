@@ -215,3 +215,29 @@ You will see logs for two containers spinning up.
     INFO [gemini-demo,63f3e3e3e3e3e3e3,63f3e3e3e3e3e3e3] 24416 --- [nio-8080-exec-2] c.e.g.HelloController: HelloController's hello() method was called
     ```
     *   This `traceId` should match the one you see in Zipkin for the same request, allowing you to correlate a specific log message to a specific distributed trace.
+
+---
+
+## 6. Database Schema Migration (Flyway)
+
+**Goal:** Version-control schema changes so changes are applied consistently across environments and tracked in source control.
+
+### Implementation Details
+1.  **Dependency**: Added `spring-boot-starter-flyway` to `pom.xml`.
+2.  **Migration Script**: Created `src/main/resources/db/migration/V1__init.sql`.
+    *   Defines the `greetings` table (same as before) and adds a new `users` table.
+    *   Seeds both tables with initial data.
+3.  **Disabled Spring SQL Initialization**: Set `spring.sql.init.mode=never` so Flyway is the sole source of schema initialization.
+4.  **Flyway state tracking**: Flyway maintains a table called `flyway_schema_history` in the database. This table records which migrations have been applied so Flyway can safely run only the missing ones on subsequent app starts.
+5.  **Application Code**:
+    *   Added `User` model and `UserMapper`.
+    *   Added `/api/users` endpoint to return seeded users.
+    *   Added an integration test to verify the Flyway migration and the seeded data.
+
+### How to Verify
+1.  Start the app: `mvn spring-boot:run`.
+2.  Confirm Flyway ran by looking for log output like `Flyway` and `Successfully applied 1 migration`.
+3.  Exercise the new endpoints:
+    *   `curl http://localhost:8080/api/users` — should return JSON for the seeded users (`alice`, `bob`).
+    *   `curl http://localhost:8080/api/migrations` — should return Flyway migration status (current version + applied migrations).
+4.  Run the test suite: `./mvnw.cmd test` (Windows) or `./mvnw test` (Unix).
