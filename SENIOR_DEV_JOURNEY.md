@@ -35,7 +35,7 @@ This document tracks the advanced engineering practices implemented in this proj
 
 7.  **Caching Strategies**
     *   **Goal**: Implement high-performance caching (Redis/Caffeine) with proper eviction policies.
-    *   **Status**: *Pending*
+    *   **Status**: *Completed*
 
 8.  **Distributed Locking (Race Conditions)**
     *   **Goal**: Solve the "Flash Sale" problem (overselling inventory) using Redis or Database locks to ensure data integrity under high concurrency.

@@ -74,6 +74,22 @@ public class HelloController {
         return result;
     }
 
+    @GetMapping("/api/cached-db-hello")
+    public String cachedDbHello() {
+        return helloService.getCachedGreetingFromDb();
+    }
+
+    @GetMapping("/api/cached-users")
+    public java.util.List<com.example.gemini_demo.model.User> cachedUsers() {
+        return helloService.getCachedUsers();
+    }
+
+    @GetMapping("/api/cache-clear")
+    public String clearCache() {
+        helloService.clearCache();
+        return "Caches cleared";
+    }
+
     @GetMapping("/api/hello")
     @MeasureTime // <--- The Aspect will now intercept this call
     @Async("taskExecutor") // <--- Run this in a separate thread from our custom pool

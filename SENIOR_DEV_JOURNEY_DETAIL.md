@@ -241,3 +241,36 @@ You will see logs for two containers spinning up.
     *   `curl http://localhost:8080/api/users` — should return JSON for the seeded users (`alice`, `bob`).
     *   `curl http://localhost:8080/api/migrations` — should return Flyway migration status (current version + applied migrations).
 4.  Run the test suite: `./mvnw.cmd test` (Windows) or `./mvnw test` (Unix).
+
+---
+
+## 7. Caching Strategies (Caffeine)
+
+**Goal:** Add fast application-level caching for expensive DB calls and allow explicit cache eviction.
+
+### Implementation Details
+1.  **Dependencies**:
+    * Added `spring-boot-starter-cache` and `caffeine` to `pom.xml`.
+2.  **Enable caching**:
+    * Added `@EnableCaching` in `GeminiDemoApplication`.
+3.  **Cache configuration**:
+    * Added `CacheConfig` with `Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).maximumSize(500).recordStats()`.
+    * Configured caches `greetings` and `users`.
+4.  **Service Cache**:
+    * Added `@Cacheable("greetings")` on `getCachedGreetingFromDb()` and `@Cacheable("users")` on `getCachedUsers()`.
+    * Added `@CacheEvict(value = {"greetings", "users"}, allEntries = true)` on `clearCache()`.
+5.  **Controller Endpoints**:
+    * Added `/api/cached-db-hello` to return cached greeting.
+    * Added `/api/cached-users` to return cached users.
+    * Added `/api/cache-clear` to evict caches.
+6.  **Frontend**:
+    * Added UI buttons in `frontend/src/App.js` for cached greeting and cache clear.
+
+### How to Verify
+1.  Start app: `mvnw spring-boot:run -Dskip.frontend`.
+2.  Use the frontend comparator buttons:
+    * `Fetch from DB` (no cache) should call `/api/db-hello` and return a fresh result each time.
+    * `Fetch Cached Greeting` should call `/api/cached-db-hello`; first call warms the cache, subsequent calls should be faster and return the same cached value.
+3.  Call `/api/cache-clear`; then call `/api/cached-db-hello` again to verify it reloads from DB.
+4.  Check `/api/cached-users` and `/api/cache-clear` similarly.
+5.  Run tests: `./mvnw.cmd test`.

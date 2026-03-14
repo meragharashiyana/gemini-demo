@@ -238,6 +238,22 @@ By default, `mvn spring-boot:run` **does not** run the React development server 
 
 **Result**: Running `mvn spring-boot:run` will now perform a full build of the frontend before starting the server.
 
+## Step 7: Caching Strategies
+
+We added Spring Cache with Caffeine to speed up repeated reads from the database.
+
+### New backend endpoints
+* `/api/cached-db-hello` - returns a cached greeting.
+* `/api/cached-users` - returns cached user list.
+* `/api/cache-clear` - clears all application caches.
+
+### Frontend updates
+In `frontend/src/App.js`, we added explicit comparison UI:
+* `Fetch from DB` (no cache)
+* `Fetch Cached Greeting` (cache)
+* `Clear Cache`
+This allows direct side-by-side comparison of with/without cache behavior.
+
 ---
 
 ## Continuing the Journey with Gemini Code Assist
