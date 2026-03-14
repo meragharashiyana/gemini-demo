@@ -32,6 +32,12 @@ public class HelloService {
         return greeting.getMessage();
     }
 
+    @Cacheable(value = "greetingsHybrid", key = "#root.methodName")
+    public String getHybridCachedGreetingFromDb() {
+        Greeting greeting = greetingMapper.getRandomGreeting();
+        return greeting.getMessage();
+    }
+
     public List<User> getAllUsers() {
         return userMapper.findAllUsers();
     }
@@ -41,7 +47,7 @@ public class HelloService {
         return userMapper.findAllUsers();
     }
 
-    @CacheEvict(value = {"greetings", "users"}, allEntries = true)
+    @CacheEvict(value = {"greetings", "users", "greetingsHybrid"}, allEntries = true)
     public void clearCache() {
         // Evicts all entries from greeting and user caches
     }

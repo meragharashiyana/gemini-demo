@@ -1,1 +1,1 @@
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Dapp.cache.redis.enabled=true"

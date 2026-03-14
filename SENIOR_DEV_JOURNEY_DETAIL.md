@@ -267,10 +267,18 @@ You will see logs for two containers spinning up.
     * Added UI buttons in `frontend/src/App.js` for cached greeting and cache clear.
 
 ### How to Verify
-1.  Start app: `mvnw spring-boot:run -Dskip.frontend`.
-2.  Use the frontend comparator buttons:
+1.  Start Redis (needed for hybrid cache):
+    * `docker-compose up -d redis`
+    * Or on Windows: `start_docker.bat` (stops with `stop_docker.bat`).
+2.  Start app (with Redis L2 enabled): `./mvnw spring-boot:run -Dskip.frontend -Dapp.cache.redis.enabled=true` (Windows: `./mvnw.cmd spring-boot:run -Dskip.frontend -Dapp.cache.redis.enabled=true` or `start.bat`).
+3.  Use the frontend comparator buttons:
     * `Fetch from DB` (no cache) should call `/api/db-hello` and return a fresh result each time.
-    * `Fetch Cached Greeting` should call `/api/cached-db-hello`; first call warms the cache, subsequent calls should be faster and return the same cached value.
-3.  Call `/api/cache-clear`; then call `/api/cached-db-hello` again to verify it reloads from DB.
-4.  Check `/api/cached-users` and `/api/cache-clear` similarly.
-5.  Run tests: `./mvnw.cmd test`.
+    * `Fetch Cached Greeting` should call `/api/cached-db-hello`; first call warms L1 cache, subsequent calls should be faster and return the same cached value.
+    * `Fetch Hybrid Cached Greeting` should call `/api/hybrid-cached-db-hello`; when Redis is enabled, this uses L1 (Caffeine) + L2 (Redis) and lets you compare performance across the three methods.
+4.  Call `/api/cache-clear`; then call `/api/cached-db-hello` and `/api/hybrid-cached-db-hello` again to verify both reload from the DB (and repopulate caches).
+5.  To force the hybrid path to go to Redis (L2) and then back into L1, clear only the L1 cache:
+    * `/api/cache/l1-clear` — clears only the Caffeine (L1) cache for the hybrid greeting. The next call to `/api/hybrid-cached-db-hello` will load from Redis (if present) and repopulate L1.
+6.  To inspect whether L1/L2 contain the cached value:
+    * `/api/cache/inspect` — returns whether the hybrid key exists in L1 and L2 and (when present) its current value.
+7.  Check `/api/cached-users` and `/api/cache-clear` similarly.
+8.  Run tests: `./mvnw.cmd test`.

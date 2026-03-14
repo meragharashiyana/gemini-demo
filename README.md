@@ -2,6 +2,15 @@
 
 This document outlines the steps to create a sample Java Spring Boot project with a ReactJS front end.
 
+## Quick Start (Windows)
+
+Use the provided helper scripts to start/stop the app and the required Docker services:
+
+* `start.bat` – start the Spring Boot app (Redis cache enabled by default)
+* `stop.bat` – stop the Spring Boot app (kills the process listening on port 8080)
+* `start_docker.bat` – start Redis + Prometheus + Zipkin
+* `stop_docker.bat` – stop the above services
+
 ## Phase 1: Backend (Spring Boot)
 
 1.  **Initialize a Spring Boot application:**
@@ -209,8 +218,17 @@ In this mode, you run the backend and frontend separately. This enables hot-relo
         ```bash
         mvn spring-boot:run -Dskip.frontend
         ```
+    *   On Windows, you can use the provided helper script which also enables Redis caching:
+        ```bat
+        start.bat
+        ```
     *   The backend runs on `http://localhost:8080`.
-2.  **Start Frontend**:
+2.  **Stop Backend (Windows)**:
+    *   Run:
+        ```bat
+        stop.bat
+        ```
+3.  **Start Frontend**:
     *   Open a new terminal in the `frontend` directory.
     *   Run `npm start`.
     *   Access the application at `http://localhost:3000`. (API requests are proxied to port 8080).
@@ -250,9 +268,10 @@ We added Spring Cache with Caffeine to speed up repeated reads from the database
 ### Frontend updates
 In `frontend/src/App.js`, we added explicit comparison UI:
 * `Fetch from DB` (no cache)
-* `Fetch Cached Greeting` (cache)
+* `Fetch Cached Greeting` (local cache / Caffeine)
+* `Fetch Hybrid Cached Greeting` (L1 Caffeine + L2 Redis, when enabled)
 * `Clear Cache`
-This allows direct side-by-side comparison of with/without cache behavior.
+This allows direct side-by-side comparison of no cache, local cache, and hybrid cache behavior.
 
 ---
 
