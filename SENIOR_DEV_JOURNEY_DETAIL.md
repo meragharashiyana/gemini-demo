@@ -282,3 +282,42 @@ You will see logs for two containers spinning up.
     * `/api/cache/inspect` — returns whether the hybrid key exists in L1 and L2 and (when present) its current value.
 7.  Check `/api/cached-users` and `/api/cache-clear` similarly.
 8.  Run tests: `./mvnw.cmd test`.
+
+---
+
+## 7a. Two-Tier Cache (Hybrid L1/L2)
+
+**Goal:** Add a shared L2 cache (Redis) to complement the fast, in-memory L1 cache (Caffeine), providing resilience and better performance in a distributed environment.
+
+### Implementation Details
+1.  **Dependencies**: Added `spring-boot-starter-data-redis` to `pom.xml`.
+2.  **Configuration**:
+    *   Added `app.cache.redis.enabled=false` to `application.properties` to make the L2 cache opt-in.
+    *   Added Redis connection details (`spring.redis.host`, `spring.redis.port`).
+3.  **Cache Manager Logic (`CacheConfig.java`)**:
+    *   The `cacheManager` bean now conditionally creates a `TwoLevelCacheManager` if `app.cache.redis.enabled` is true.
+    *   If Redis is disabled or unavailable, it gracefully falls back to the `CaffeineCacheManager` alone.
+4.  **Custom Cache Implementation**:
+    *   `TwoLevelCacheManager`: A custom `CacheManager` that wraps the L1 (Caffeine) and L2 (Redis) managers.
+    *   `TwoLevelCache`: A custom `Cache` implementation that orchestrates the two levels:
+        *   **Read (`get`)**: Checks L1 -> L2 -> Promote from L2 to L1 if found.
+        *   **Write (`put`)**: Writes to both L1 and L2.
+        *   **Evict (`evict`/`clear`)**: Invalidates both L1 and L2.
+5.  **Service Layer**: A new method `getHybridCachedGreetingFromDb` was added to `HelloService` and annotated with `@Cacheable("greetingsHybrid")` to use the new two-level cache.
+6.  **Controller & Frontend**: Added a new endpoint `/api/hybrid-cached-db-hello` and a corresponding button in the UI to specifically test the hybrid cache behavior and compare its performance. Debug endpoints `/api/cache/l1-clear` and `/api/cache/inspect` were also added.
+
+### Bug Fix: Inefficient `get` in `TwoLevelCache`
+*   **Problem**: The original `get(key, valueLoader)` method was inefficiently calling the two-level `get(key)` again instead of checking L1 and L2 directly.
+*   **Fix**: The method was rewritten to check L1, then L2, and only call the `valueLoader` if the value was absent from both, preventing redundant lookups and potential deserialization issues.
+
+### How to Verify
+The verification steps are the same as for Step 7, with a focus on the "Hybrid Cached Greeting" button and the cache inspection endpoint.
+1.  **Start Redis**: `docker-compose up -d redis`
+2.  **Start App with Redis**: `mvnw spring-boot:run -Dapp.cache.redis.enabled=true`
+3.  **Observe Behavior**:
+    *   First click on "Fetch Hybrid Cached Greeting" will be slow (loads from DB).
+    *   Subsequent clicks will be fast (loads from L1 Caffeine cache).
+    *   Click "Clear L1 Cache".
+    *   Click "Fetch Hybrid Cached Greeting" again. It should be faster than the first call (loads from L2 Redis cache) but slower than the L1 cache hit.
+    *   Click "Clear All Cache". The next call will be slow again (loads from DB).
+4.  **Inspect Cache**: Use the `/api/cache/inspect` endpoint to see the state of the L1 and L2 caches at each step.

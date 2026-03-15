@@ -74,11 +74,16 @@ public class TwoLevelCache implements Cache {
     @Nullable
     public <T> T get(Object key, Callable<T> valueLoader) {
         // Attempt L1 first
-        ValueWrapper wrapper = get(key);
+        ValueWrapper wrapper = l1.get(key);
         if (wrapper != null) {
-            @SuppressWarnings("unchecked")
-            T value = (T) wrapper.get();
-            return value;
+            return (T) wrapper.get();
+        }
+        // Attempt L2
+        wrapper = l2.get(key);
+        if (wrapper != null) {
+            // Promote to L1
+            l1.put(key, wrapper.get());
+            return (T) wrapper.get();
         }
         // Value not in either cache, compute it and store in both
         try {

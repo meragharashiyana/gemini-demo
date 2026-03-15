@@ -39,7 +39,7 @@ This document tracks the advanced engineering practices implemented in this proj
 
 7a. **Two-Tier Cache (Hybrid L1/L2)**
     *   **Goal**: Add Redis as a shared L2 cache while keeping Caffeine as the local L1 cache.
-    *   **Status**: *In Progress*
+    *   **Status**: *Completed*
 
 8.  **Distributed Locking (Race Conditions)**
     *   **Goal**: Solve the "Flash Sale" problem (overselling inventory) using Redis or Database locks to ensure data integrity under high concurrency.
